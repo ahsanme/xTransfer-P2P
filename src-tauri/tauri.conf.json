@@ -29,6 +29,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -39,7 +40,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk4MTk5MzkyNjM0NDVERDEKUldUUlhVUmprcE1abVBidDBld1ptU09LVUdBZlVTVGlCWVhhblMrdnExS0MxMEpocEZrMmIvOTQK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZGQ0I4RTZENEJGREYxRUEKUldUcThmMUxiWTdML3dxb1llWU5GZDJkQnFnc1RBUFdPOTA4TmNoS3ZGZkRCRFVEeDFZdW1JREsK",
       "endpoints": [
         "https://github.com/ahsanme/xTransfer-P2P/releases/latest/download/latest.json"
       ]
