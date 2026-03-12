@@ -52,6 +52,21 @@ export function useTransfers() {
       setTransfers((prev) => ({ ...prev, [t.transfer_id]: t }));
     });
 
+    // Mirrors incoming-file but for sends — backend emits this right after
+    // inserting the transfer into its map so the UI shows it immediately.
+    const unOutgoing = listen<IncomingFileEvent>("outgoing-file", (e) => {
+      const t: TransferInfo = {
+        transfer_id: e.payload.transfer_id,
+        peer_id: e.payload.peer_id,
+        file_name: e.payload.file_name,
+        file_size: e.payload.file_size,
+        bytes_transferred: 0,
+        direction: "send",
+        status: "pending",
+      };
+      setTransfers((prev) => ({ ...prev, [t.transfer_id]: t }));
+    });
+
     const unProgress = listen<TransferProgressEvent>("transfer-progress", (e) => {
       updateTransfer(e.payload.transfer_id, {
         bytes_transferred: e.payload.bytes_transferred,
@@ -91,6 +106,7 @@ export function useTransfers() {
 
     return () => {
       unIncoming.then((fn) => fn());
+      unOutgoing.then((fn) => fn());
       unProgress.then((fn) => fn());
       unComplete.then((fn) => fn());
       unFailed.then((fn) => fn());

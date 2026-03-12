@@ -363,7 +363,7 @@ async fn on_command(
                     TransferInfo {
                         transfer_id: transfer_id.to_string(),
                         peer_id: peer_id.to_string(),
-                        file_name,
+                        file_name: file_name.clone(),
                         file_size,
                         bytes_transferred: 0,
                         direction: TransferDirection::Send,
@@ -373,6 +373,18 @@ async fn on_command(
                     },
                 );
             }
+
+            // Notify frontend immediately so it can show the outgoing transfer
+            // before any progress events arrive.
+            let _ = app.emit(
+                "outgoing-file",
+                IncomingFilePayload {
+                    transfer_id: transfer_id.to_string(),
+                    peer_id: peer_id.to_string(),
+                    file_name: file_name.clone(),
+                    file_size,
+                },
+            );
 
             let (_ephemeral_secret, ephemeral_pubkey) =
                 encryption::generate_ephemeral_keypair();
