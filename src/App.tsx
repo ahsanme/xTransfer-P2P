@@ -25,6 +25,11 @@ export function App() {
   const [myCode, setMyCode] = useState("");
   const [peerId, setPeerId] = useState("");
 
+  // Apply theme to <html> whenever it changes (covers initial load too)
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", settings.theme ?? "dark");
+  }, [settings.theme]);
+
   useEffect(() => {
     api.getPeerId().then(setPeerId).catch(console.error);
   }, []);

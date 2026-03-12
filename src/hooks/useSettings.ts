@@ -4,10 +4,12 @@ const SETTINGS_KEY = "xtransfer_settings";
 
 export interface Settings {
   savePath: string | null;
+  theme: "dark" | "light";
 }
 
 const DEFAULT_SETTINGS: Settings = {
   savePath: null,
+  theme: "dark",
 };
 
 function loadSettings(): Settings {
