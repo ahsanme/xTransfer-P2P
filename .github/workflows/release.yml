@@ -71,13 +71,29 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      - name: Write signing key to temp file
+        # GitHub Secrets adds a trailing newline which breaks Tauri's base64 decoder.
+        # Writing to a file via Node.js (trimEnd) avoids this, and TAURI_SIGNING_PRIVATE_KEY
+        # can be a file path — Tauri reads it directly without base64 decoding.
+        shell: node {0}
+        run: |
+          const fs = require('fs');
+          const os = require('os');
+          const path = require('path');
+          const raw = process.env.RAW_KEY;
+          if (!raw) { console.log('No signing key set, skipping.'); process.exit(0); }
+          const keyPath = path.join(os.tmpdir(), 'tauri-signing.key');
+          fs.writeFileSync(keyPath, raw.trimEnd());
+          fs.appendFileSync(process.env.GITHUB_ENV, `TAURI_SIGNING_PRIVATE_KEY=${keyPath}\n`);
+          console.log('Signing key written to', keyPath);
+        env:
+          RAW_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+
       - name: Build and release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Signing keys for auto-updater — set these in GitHub repo Secrets.
-          # Without them the build still succeeds but latest.json won't be generated.
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # TAURI_SIGNING_PRIVATE_KEY is set to a file path by the step above (no newline issue)
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
