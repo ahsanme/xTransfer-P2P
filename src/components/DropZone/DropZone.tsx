@@ -24,8 +24,11 @@ export function DropZone({ selectedPeerId, onTransferStarted }: Props) {
         const id = await api.sendFile(selectedPeerId, path);
         onTransferStarted(id);
       } catch (e) {
-        setStatus(`Error: ${e}`);
-        setTimeout(() => setStatus(null), 5000);
+        // Show the backend error message directly — it already contains a human-readable
+        // explanation (e.g. for .app bundles: "folder or app bundle cannot be sent…")
+        const msg = typeof e === "string" ? e : `Send failed: ${e}`;
+        setStatus(msg);
+        setTimeout(() => setStatus(null), 7000);
       }
     }
   };

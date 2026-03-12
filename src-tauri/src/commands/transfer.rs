@@ -14,7 +14,19 @@ pub async fn send_file(
         .map_err(|e| format!("invalid peer id: {e}"))?;
     let path = PathBuf::from(&file_path);
     if !path.exists() {
-        return Err(format!("file not found: {file_path}"));
+        return Err(format!("File not found: {file_path}"));
+    }
+    // On macOS, .app bundles (and other directories) are directories, not files.
+    // We cannot stream a directory as a single file — reject early with a clear message.
+    if path.is_dir() {
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("this item");
+        return Err(format!(
+            "'{name}' is a folder or app bundle and cannot be sent directly. \
+             Please compress it into a .zip file first."
+        ));
     }
     let transfer_id = Uuid::new_v4();
 
