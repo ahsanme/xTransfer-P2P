@@ -1,14 +1,17 @@
 import { downloadDir, join } from "@tauri-apps/api/path";
 import { save } from "@tauri-apps/plugin-dialog";
 import type { TransferInfo } from "../../lib/types";
+import { shortId } from "../../lib/utils";
 import { api } from "../../lib/tauri";
 import "./IncomingFilePrompt.css";
 
 interface Props {
   transfers: TransferInfo[];
+  aliases: Record<string, string>;
+  savePath: string | null;
 }
 
-export function IncomingFilePrompt({ transfers }: Props) {
+export function IncomingFilePrompt({ transfers, aliases, savePath }: Props) {
   const pending = transfers.filter((t) => t.status === "pending" && t.direction === "receive");
   if (pending.length === 0) return null;
 
@@ -25,16 +28,26 @@ export function IncomingFilePrompt({ transfers }: Props) {
       </h3>
       <div className="incoming-section__list">
         {pending.map((t) => (
-          <IncomingItem key={t.transfer_id} transfer={t} />
+          <IncomingItem key={t.transfer_id} transfer={t} aliases={aliases} savePath={savePath} />
         ))}
       </div>
     </div>
   );
 }
 
-function IncomingItem({ transfer: t }: { transfer: TransferInfo }) {
+function IncomingItem({
+  transfer: t,
+  aliases,
+  savePath,
+}: {
+  transfer: TransferInfo;
+  aliases: Record<string, string>;
+  savePath: string | null;
+}) {
+  const senderName = aliases[t.peer_id] ?? shortId(t.peer_id);
+
   const handleAccept = async () => {
-    const dir = await downloadDir();
+    const dir = savePath ?? (await downloadDir());
     const path = await join(dir, t.file_name);
     await api.acceptTransfer(t.transfer_id, path);
   };
@@ -63,7 +76,7 @@ function IncomingItem({ transfer: t }: { transfer: TransferInfo }) {
       <div className="incoming-item__info">
         <p className="incoming-item__name" title={t.file_name}>{t.file_name}</p>
         <p className="incoming-item__meta">
-          {formatBytes(t.file_size)} · from {t.peer_id.slice(-8)}
+          {formatBytes(t.file_size)} · from {senderName}
         </p>
       </div>
       <div className="incoming-item__actions">

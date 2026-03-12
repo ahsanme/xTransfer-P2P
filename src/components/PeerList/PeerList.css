@@ -84,3 +84,17 @@
   color: var(--text-secondary);
   text-transform: uppercase;
 }
+
+/* Inline alias editing input */
+.peer-item__name-input {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+  outline: none;
+  min-width: 0;
+}

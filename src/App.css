@@ -86,11 +86,38 @@ body {
 
 .sidebar__connect-btn:hover { filter: brightness(1.15); }
 
+.sidebar__bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
 .sidebar__peer-id {
   font-size: 11px;
   color: var(--text-secondary);
   font-family: monospace;
-  text-align: center;
+  letter-spacing: 0.05em;
+  flex: 1;
+}
+
+.sidebar__settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.sidebar__settings-btn:hover {
+  color: var(--text);
+  background: var(--hover);
 }
 
 /* ── Main ─────────────────────────────────────────────────────────────────── */
