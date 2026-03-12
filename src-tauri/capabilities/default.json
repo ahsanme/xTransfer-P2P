@@ -1,0 +1,18 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema/acl/capability.json",
+  "identifier": "default",
+  "description": "Default permissions for xTransfer P2P",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:default",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:default",
+    "fs:read-all",
+    "fs:write-all",
+    "notification:default"
+  ]
+}

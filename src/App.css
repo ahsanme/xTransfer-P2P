@@ -1,0 +1,111 @@
+:root {
+  --bg: #0f1117;
+  --card-bg: #1a1d26;
+  --border: #2d3143;
+  --text: #e2e8f0;
+  --text-secondary: #6b7280;
+  --accent: #6366f1;
+  --accent-light: rgba(99, 102, 241, 0.1);
+  --hover: rgba(255, 255, 255, 0.05);
+  --badge-bg: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: #0c0e16;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar__logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar__logo-icon {
+  font-size: 20px;
+}
+
+.sidebar__logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.sidebar__footer {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar__connect-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: filter 0.15s;
+}
+
+.sidebar__connect-btn:hover { filter: brightness(1.15); }
+
+.sidebar__peer-id {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: monospace;
+  text-align: center;
+}
+
+/* ── Main ─────────────────────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.main__top {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

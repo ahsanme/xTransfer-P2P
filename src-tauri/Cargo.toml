@@ -1,0 +1,73 @@
+[package]
+name = "xtransfer-p2p"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+
+[lib]
+name = "xtransfer_p2p_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Tauri
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-notification = "2"
+
+# libp2p
+libp2p = { version = "0.55", features = [
+    "tokio",
+    "quic",
+    "noise",
+    "yamux",
+    "tcp",
+    "mdns",
+    "identify",
+    "relay",
+    "dcutr",
+    "autonat",
+    "request-response",
+    "kad",
+    "ping",
+    "macros",
+] }
+
+# Async
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Crypto
+aes-gcm = "0.10"
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+hkdf = "0.12"
+sha2 = "0.10"
+rand = "0.8"
+
+# Utilities
+anyhow = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+base64 = "0.22"
+hex = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+keyring = "3"
+bytes = "1"
+dirs = "5"
+async-trait = "0.1"
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

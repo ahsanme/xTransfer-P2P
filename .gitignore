@@ -1,0 +1,20 @@
+# Rust build artifacts
+target/
+src-tauri/target/
+
+# Node
+node_modules/
+dist/
+
+# Tauri generated
+src-tauri/gen/
+
+# OS
+.DS_Store
+
+# Claude internal
+.claude/
+
+# Env
+.env
+.env.*
