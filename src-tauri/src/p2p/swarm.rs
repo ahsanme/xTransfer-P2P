@@ -1,4 +1,4 @@
-use crate::p2p::behaviour::{AppBehaviour, BOOTSTRAP_RELAYS};
+use crate::p2p::behaviour::{AppBehaviour, bootstrap_relays};
 use crate::p2p::codec::{FileRequest, FileResponse};
 use crate::p2p::encryption;
 use crate::p2p::transfer::{
@@ -97,7 +97,8 @@ pub async fn run_swarm(
     swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
-    for addr_str in BOOTSTRAP_RELAYS {
+    let relays = bootstrap_relays();
+    for addr_str in &relays {
         if let Ok(addr) = addr_str.parse::<Multiaddr>() {
             if let Some(peer_id) = addr.iter().find_map(|p| {
                 if let libp2p::multiaddr::Protocol::P2p(id) = p {
@@ -106,11 +107,14 @@ pub async fn run_swarm(
                     None
                 }
             }) {
+                tracing::info!("Bootstrap relay: {addr}");
                 swarm.behaviour_mut().kad.add_address(&peer_id, addr);
             }
         }
     }
-    let _ = swarm.behaviour_mut().kad.bootstrap();
+    if !relays.is_empty() {
+        let _ = swarm.behaviour_mut().kad.bootstrap();
+    }
 
     let (chunk_tx, mut chunk_rx) = mpsc::channel::<ChunkMessage>(64);
     let mut relay_addr: Option<Multiaddr> = None;
@@ -267,7 +271,7 @@ async fn on_swarm_event(
                 let _ =
                     app.emit("nat-status-changed", serde_json::json!({ "status": status }));
                 if matches!(new, autonat::NatStatus::Private) {
-                    for addr_str in BOOTSTRAP_RELAYS {
+                    for addr_str in bootstrap_relays() {
                         if let Ok(addr) = addr_str.parse::<Multiaddr>() {
                             let circuit =
                                 addr.with(libp2p::multiaddr::Protocol::P2pCircuit);

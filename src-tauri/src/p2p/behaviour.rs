@@ -8,12 +8,27 @@ use libp2p::{
 };
 use std::time::Duration;
 
-/// Bootstrap relay / bootstrap addresses.
-/// In production, add your own hosted relay server here.
-pub const BOOTSTRAP_RELAYS: &[&str] = &[
-    "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-    "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
-];
+/// Built-in relay address — your hosted AWS relay server.
+/// Override at runtime with the XTRANSFER_RELAY env var:
+///   XTRANSFER_RELAY=/ip4/1.2.3.4/tcp/4001/p2p/<PeerID>
+const BUILTIN_RELAY: &str =
+    "/ip4/RELAY_IP/tcp/4001/p2p/RELAY_PEER_ID";
+
+/// Returns the relay addresses to use: env var override, or the built-in.
+pub fn bootstrap_relays() -> Vec<String> {
+    if let Ok(addr) = std::env::var("XTRANSFER_RELAY") {
+        if !addr.is_empty() {
+            return vec![addr];
+        }
+    }
+    // Only include the built-in if it looks like it has been configured
+    // (i.e. doesn't contain the placeholder text).
+    if BUILTIN_RELAY.contains("RELAY_IP") || BUILTIN_RELAY.contains("RELAY_PEER_ID") {
+        vec![]
+    } else {
+        vec![BUILTIN_RELAY.to_string()]
+    }
+}
 
 /// All behaviours composed via the NetworkBehaviour derive macro.
 #[derive(NetworkBehaviour)]

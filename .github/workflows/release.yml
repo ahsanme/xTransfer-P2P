@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ── Desktop app (macOS / Windows / Linux) ─────────────────────────────────
   release:
     permissions:
       contents: write
@@ -73,7 +74,38 @@ jobs:
             | Windows | `.msi` or `.exe` |
             | Linux | `.AppImage` or `.deb` |
 
+            **Relay server** (for self-hosting): see `xtransfer-relay-windows.exe` asset below.
+
             > **macOS note:** Right-click → Open the first time (app is not yet notarized).
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  # ── Relay server binary (Windows only — for AWS deployment) ───────────────
+  relay-server:
+    permissions:
+      contents: write
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '. -> target'
+
+      - name: Build relay server
+        run: cargo build --release -p xtransfer-relay
+
+      - name: Upload relay binary to release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: target/release/xtransfer-relay.exe
+          name: 'xTransfer-P2P ${{ github.ref_name }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

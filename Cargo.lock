@@ -7372,6 +7372,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "xtransfer-relay"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "libp2p",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "yamux"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
