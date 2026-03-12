@@ -32,6 +32,17 @@ pub fn run() {
 
             app.manage(app_state);
 
+            // Set app icon programmatically (required in dev mode; in release builds
+            // the .app bundle icns handles it automatically)
+            {
+                let icon_bytes = include_bytes!("../icons/icon.png");
+                if let Ok(icon) = tauri::image::Image::from_bytes(icon_bytes) {
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.set_icon(icon);
+                    }
+                }
+            }
+
             // Spawn the P2P swarm loop as a background task
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = p2p::swarm::run_swarm(
