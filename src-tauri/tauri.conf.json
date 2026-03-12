@@ -39,7 +39,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "REPLACE_WITH_PUBKEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk4MTk5MzkyNjM0NDVERDEKUldUUlhVUmprcE1abVBidDBld1ptU09LVUdBZlVTVGlCWVhhblMrdnExS0MxMEpocEZrMmIvOTQK",
       "endpoints": [
         "https://github.com/ahsanme/xTransfer-P2P/releases/latest/download/latest.json"
       ]
