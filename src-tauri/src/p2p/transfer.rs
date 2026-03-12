@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::io::AsyncReadExt;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 use uuid::Uuid;
 
 /// 1 MiB chunk size — balanced between memory use and round-trip overhead
@@ -23,6 +23,11 @@ pub struct OutgoingTransfer {
     pub peer_id: libp2p::PeerId,
     pub file_path: PathBuf,
     pub session_key: Option<[u8; 32]>,
+    /// Sender half of the per-transfer ChunkAck channel.
+    /// The main loop forwards ChunkAck events here to unblock the chunk-reader task.
+    pub ack_tx: mpsc::Sender<u64>,
+    /// Receiver half — taken once when the chunk-reader task is spawned.
+    pub ack_rx: Option<mpsc::Receiver<u64>>,
 }
 
 /// Incoming transfer session (receiver side)

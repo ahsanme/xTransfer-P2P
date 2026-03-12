@@ -72,10 +72,13 @@ pub async fn run_swarm(
         .with_quic()
         .with_other_transport(|key| {
             let noise = noise::Config::new(key)?;
+            // Raise the yamux sub-stream ceiling so heavy transfers never hit the default cap.
+            let mut yamux_cfg = yamux::Config::default();
+            yamux_cfg.set_max_num_streams(1024);
             let transport = tcp::tokio::Transport::new(tcp::Config::default().nodelay(true))
                 .upgrade(libp2p::core::upgrade::Version::V1Lazy)
                 .authenticate(noise)
-                .multiplex(yamux::Config::default())
+                .multiplex(yamux_cfg)
                 .map(|(p, m), _| (p, StreamMuxerBox::new(m)))
                 .boxed();
             Ok(transport)
@@ -116,7 +119,8 @@ pub async fn run_swarm(
         let _ = swarm.behaviour_mut().kad.bootstrap();
     }
 
-    let (chunk_tx, mut chunk_rx) = mpsc::channel::<ChunkMessage>(64);
+    // Small buffer — back-pressure via ChunkAck keeps at most 1 in-flight at a time.
+    let (chunk_tx, mut chunk_rx) = mpsc::channel::<ChunkMessage>(4);
     let mut relay_addr: Option<Multiaddr> = None;
     let mut pending_outgoing: HashMap<Uuid, OutgoingTransfer> = HashMap::new();
     let mut pending_incoming: HashMap<Uuid, IncomingTransfer> = HashMap::new();
@@ -382,6 +386,10 @@ async fn on_command(
             {
                 Ok((header, ..)) => {
                     swarm.behaviour_mut().xfer.send_request(&peer_id, header);
+                    // Create the per-transfer ack channel used for back-pressure.
+                    // The chunk-reader task waits on ack_rx before sending each chunk;
+                    // the main loop forwards ChunkAck events to ack_tx.
+                    let (ack_tx, ack_rx) = mpsc::channel::<u64>(2);
                     pending_outgoing.insert(
                         transfer_id,
                         OutgoingTransfer {
@@ -389,6 +397,8 @@ async fn on_command(
                             peer_id,
                             file_path,
                             session_key: None,
+                            ack_tx,
+                            ack_rx: Some(ack_rx),
                         },
                     );
                 }
@@ -684,9 +694,11 @@ async fn on_incoming_response(
             tracing::info!("Transfer {transfer_id} accepted by {peer}");
             set_transfer_status(transfers, transfer_id, TransferStatus::Active, None).await;
 
-            if let Some(outgoing) = pending_outgoing.get(&transfer_id) {
+            if let Some(outgoing) = pending_outgoing.get_mut(&transfer_id) {
                 let file_path = outgoing.file_path.clone();
                 let session_key = outgoing.session_key;
+                // Take the ack receiver — the chunk-reader task owns it from here.
+                let ack_rx = outgoing.ack_rx.take().expect("ack_rx already consumed");
                 let chunk_tx2 = chunk_tx.clone();
                 let app2 = app.clone();
                 let transfers2 = transfers.clone();
@@ -702,6 +714,7 @@ async fn on_incoming_response(
                         file_path,
                         session_key,
                         start,
+                        ack_rx,
                     )
                     .await
                     {
@@ -746,6 +759,12 @@ async fn on_incoming_response(
 
         FileResponse::ChunkAck { transfer_id, chunk_index } => {
             tracing::trace!("ChunkAck: {transfer_id} chunk {chunk_index}");
+            // Signal the chunk-reader task that the remote peer received and ack'd this chunk.
+            // This is the back-pressure gate: the task won't send the next chunk until it
+            // receives this signal, keeping at most 1 chunk in-flight at any time.
+            if let Some(outgoing) = pending_outgoing.get(&transfer_id) {
+                let _ = outgoing.ack_tx.try_send(chunk_index);
+            }
         }
 
         FileResponse::Error { transfer_id, message } => {
@@ -777,6 +796,7 @@ async fn read_and_send_chunks(
     file_path: PathBuf,
     session_key: Option<[u8; 32]>,
     start_chunk: u64,
+    mut ack_rx: mpsc::Receiver<u64>,
 ) -> anyhow::Result<()> {
     let metadata = tokio::fs::metadata(&file_path).await?;
     let file_size = metadata.len();
@@ -797,6 +817,21 @@ async fn read_and_send_chunks(
     let mut bytes_sent = start_chunk * CHUNK_SIZE as u64;
 
     for chunk_index in start_chunk..total_chunks {
+        // ── Back-pressure: wait for the remote peer's ChunkAck before sending the
+        // next chunk.  This keeps exactly ONE chunk in-flight at a time, which
+        // prevents yamux from exhausting its sub-stream limit on large files.
+        // (Skip the wait for the very first chunk we send in this session.)
+        if chunk_index > start_chunk {
+            match ack_rx.recv().await {
+                Some(_acked) => {} // ack received — safe to proceed
+                None => {
+                    // Channel closed: transfer was cancelled on our side.
+                    tracing::debug!("Transfer {transfer_id} ack channel closed — stopping");
+                    return Ok(());
+                }
+            }
+        }
+
         let n = file.read(&mut buf).await?;
         if n == 0 {
             break;
