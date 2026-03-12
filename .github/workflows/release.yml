@@ -55,6 +55,19 @@ jobs:
         with:
           workspaces: '. -> target'
 
+      - name: Bump version from tag
+        run: |
+          node -e "
+            const fs = require('fs');
+            const conf = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+            const version = process.env.TAG.replace(/^v/, '');
+            conf.version = version;
+            fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(conf, null, 2) + '\n');
+            console.log('Bumped tauri.conf.json version to', version);
+          "
+        env:
+          TAG: ${{ github.ref_name }}
+
       - name: Install frontend dependencies
         run: npm install
 
@@ -113,3 +126,17 @@ jobs:
           name: 'xTransfer-P2P ${{ github.ref_name }}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Publish release once all builds have uploaded their assets ─────────────
+  publish:
+    needs: [release, relay-server]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Publish release
+        run: gh release edit "${{ github.ref_name }}" --draft=false --latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
