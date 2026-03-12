@@ -1,0 +1,87 @@
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  height: 44px;
+  background: linear-gradient(90deg, #0e7490 0%, #0891b2 100%);
+  color: #fff;
+  font-size: 13px;
+  animation: slide-down 0.2s ease-out;
+  flex-shrink: 0;
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.update-banner__content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.update-banner__icon {
+  font-size: 16px;
+}
+
+.update-banner__text {
+  opacity: 0.95;
+}
+
+.update-banner__text strong {
+  font-weight: 600;
+}
+
+.update-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.update-banner__error {
+  font-size: 12px;
+  opacity: 0.85;
+  color: #fde68a;
+}
+
+.update-banner__btn {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  transition: opacity 0.15s;
+}
+
+.update-banner__btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.update-banner__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.update-banner__btn--install {
+  background: #fff;
+  color: #0e7490;
+  min-width: 130px;
+}
+
+.update-banner__btn--dismiss {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  padding: 5px 8px;
+  font-size: 11px;
+}

@@ -4,6 +4,7 @@ import { DropZone } from "./components/DropZone/DropZone";
 import { IncomingFilePrompt } from "./components/IncomingFilePrompt/IncomingFilePrompt";
 import { PeerList } from "./components/PeerList/PeerList";
 import { TransferList } from "./components/TransferList/TransferList";
+import { UpdateBanner } from "./components/UpdateBanner/UpdateBanner";
 import { usePeers } from "./hooks/usePeers";
 import { useTransfers } from "./hooks/useTransfers";
 import { api } from "./lib/tauri";
@@ -56,6 +57,7 @@ export function App() {
 
       {/* Main content */}
       <main className="main">
+        <UpdateBanner />
         <IncomingFilePrompt transfers={transfers} />
         <div className="main__top">
           <DropZone
