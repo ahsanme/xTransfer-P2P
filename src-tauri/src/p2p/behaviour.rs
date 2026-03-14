@@ -12,7 +12,7 @@ use std::time::Duration;
 /// Override at runtime with the XTRANSFER_RELAY env var:
 ///   XTRANSFER_RELAY=/ip4/1.2.3.4/tcp/4001/p2p/<PeerID>
 const BUILTIN_RELAY: &str =
-    "/ip4/RELAY_IP/tcp/4001/p2p/RELAY_PEER_ID";
+    "/ip4/54.177.30.255/tcp/4001/p2p/12D3KooWAPMCMr36wFaSuP1omKgESYUFdog9Hmg3r5hBU5TUyDLN";
 
 /// Returns the relay addresses to use: env var override, or the built-in.
 pub fn bootstrap_relays() -> Vec<String> {
