@@ -100,6 +100,11 @@ pub async fn run_swarm(
     swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
 
+    // Build relay peer map: PeerId -> circuit address.
+    // The circuit listen_on is deferred until ConnectionEstablished fires for
+    // each relay peer — calling it before the connection exists causes the
+    // listener to be closed immediately by the relay client.
+    let mut relay_circuit_map: HashMap<PeerId, Multiaddr> = HashMap::new();
     let relays = bootstrap_relays();
     for addr_str in &relays {
         if let Ok(addr) = addr_str.parse::<Multiaddr>() {
@@ -111,7 +116,9 @@ pub async fn run_swarm(
                 }
             }) {
                 tracing::info!("Bootstrap relay: {addr}");
-                swarm.behaviour_mut().kad.add_address(&peer_id, addr);
+                swarm.behaviour_mut().kad.add_address(&peer_id, addr.clone());
+                let circuit = addr.with(libp2p::multiaddr::Protocol::P2pCircuit);
+                relay_circuit_map.insert(peer_id, circuit);
             }
         }
     }
@@ -129,6 +136,16 @@ pub async fn run_swarm(
         tokio::select! {
             event = futures::StreamExt::next(&mut swarm) => {
                 let Some(event) = event else { break };
+                // When a relay peer connects, immediately request a circuit reservation.
+                // Doing it here (after ConnectionEstablished) ensures the TCP connection
+                // is live before listen_on(circuit) is called, preventing the listener
+                // from being closed immediately.
+                if let SwarmEvent::ConnectionEstablished { peer_id, .. } = &event {
+                    if let Some(circuit) = relay_circuit_map.get(peer_id) {
+                        tracing::info!("Relay connected — requesting reservation: {circuit}");
+                        let _ = swarm.listen_on(circuit.clone());
+                    }
+                }
                 on_swarm_event(
                     event, &mut swarm, &app_handle,
                     &peers, &transfers,
@@ -220,9 +237,11 @@ async fn on_swarm_event(
 
         SwarmEvent::Behaviour(bev) => match bev {
             AppBehaviourEvent::Mdns(mdns::Event::Discovered(list)) => {
+                // XTRANSFER_NO_MDNS=1 skips local peer dialing (relay-only mode for testing).
+                let no_mdns = std::env::var("XTRANSFER_NO_MDNS").unwrap_or_default() == "1";
                 for (peer_id, addr) in list {
                     swarm.behaviour_mut().kad.add_address(&peer_id, addr.clone());
-                    if !swarm.is_connected(&peer_id) {
+                    if !no_mdns && !swarm.is_connected(&peer_id) {
                         let _ = swarm.dial(addr.clone());
                     }
                     {
@@ -274,16 +293,8 @@ async fn on_swarm_event(
                 tracing::info!("NAT status: {status}");
                 let _ =
                     app.emit("nat-status-changed", serde_json::json!({ "status": status }));
-                if matches!(new, autonat::NatStatus::Private) {
-                    for addr_str in bootstrap_relays() {
-                        if let Ok(addr) = addr_str.parse::<Multiaddr>() {
-                            let circuit =
-                                addr.with(libp2p::multiaddr::Protocol::P2pCircuit);
-                            let _ = swarm.listen_on(circuit);
-                            break;
-                        }
-                    }
-                }
+                // Relay reservation is now made at startup unconditionally —
+                // no need to re-request it here based on NAT status.
             }
 
             AppBehaviourEvent::Xfer(request_response::Event::Message {

@@ -74,6 +74,20 @@ async fn main() -> Result<()> {
     swarm.listen_on(tcp_addr)?;
     swarm.listen_on(quic_addr)?;
 
+    // Register the public external address so the relay can include it in
+    // reservation responses (NoAddressesInReservation error without this).
+    // Set RELAY_PUBLIC_IP=<your AWS public IP> in the NSSM service environment.
+    let public_ip = std::env::var("RELAY_PUBLIC_IP").unwrap_or_default();
+    if !public_ip.is_empty() {
+        let ext_tcp: Multiaddr = format!("/ip4/{public_ip}/tcp/{port}").parse()?;
+        let ext_quic: Multiaddr = format!("/ip4/{public_ip}/udp/{port}/quic-v1").parse()?;
+        swarm.add_external_address(ext_tcp.clone());
+        swarm.add_external_address(ext_quic);
+        info!("External address registered: {ext_tcp}");
+    } else {
+        info!("RELAY_PUBLIC_IP not set — relay reservations will fail (NoAddressesInReservation)");
+    }
+
     // Print startup info — the user needs the PeerID to configure the client
     println!();
     println!("╔══════════════════════════════════════════╗");
@@ -83,9 +97,12 @@ async fn main() -> Result<()> {
     println!("  PeerID : {peer_id}");
     println!("  TCP    : 0.0.0.0:{port}");
     println!("  QUIC   : 0.0.0.0:{port}");
+    if !public_ip.is_empty() {
+        println!("  Public : {public_ip}:{port}");
+    }
     println!();
     println!("  Add to app BOOTSTRAP_RELAYS:");
-    println!("    /ip4/<YOUR_PUBLIC_IP>/tcp/{port}/p2p/{peer_id}");
+    println!("    /ip4/{public_ip}/tcp/{port}/p2p/{peer_id}");
     println!();
 
     loop {
